@@ -1,36 +1,127 @@
 import streamlit as st
 
+from src.data_utils import load_csv_data, prepare_time_series_dataframe
+from src.stationarity import apply_differencing, create_time_series_figure
+
 
 st.title("ARIMA Lab")
-st.caption("Không gian thực hành ARIMA. Hiện tại mới có layout placeholder.")
+st.caption("Tải dữ liệu chuỗi thời gian, quan sát chuỗi gốc và thử sai phân bậc 1 hoặc bậc 2.")
 
-left_col, right_col = st.columns([1, 1])
-
-with left_col:
-    st.subheader("Dữ liệu đầu vào")
-    st.file_uploader("Tải file CSV", type=["csv"], disabled=True)
-    st.selectbox("Chọn cột thời gian", ["Chưa có dữ liệu"], disabled=True)
-    st.selectbox("Chọn cột giá trị", ["Chưa có dữ liệu"], disabled=True)
-    st.info("Placeholder: chức năng upload, preview và chọn cột sẽ được thêm sau.")
-
-with right_col:
-    st.subheader("Cấu hình mô hình")
-    st.number_input("p", min_value=0, value=0, disabled=True)
-    st.number_input("d", min_value=0, value=0, disabled=True)
-    st.number_input("q", min_value=0, value=0, disabled=True)
-    st.button("Chạy ARIMA", disabled=True)
-    st.info("Placeholder: chưa có logic huấn luyện hoặc dự báo.")
-
-st.divider()
-
-st.subheader("Xem trước dữ liệu")
-st.dataframe(
-    [
-        {"time": "YYYY-MM-DD", "value": "..."},
-        {"time": "YYYY-MM-DD", "value": "..."},
-        {"time": "YYYY-MM-DD", "value": "..."},
-    ],
-    use_container_width=True,
+st.info(
+    """
+    Sai phân giúp chuỗi giảm xu hướng và thường ổn định hơn trước khi đưa vào ARIMA.
+    Trong trang này, bạn có thể xem chuỗi gốc rồi so sánh nhanh với chuỗi sau sai phân.
+    """
 )
 
-st.caption("Bảng trên chỉ là dữ liệu mẫu để thể hiện bố cục giao diện.")
+uploaded_file = st.file_uploader("Tải file CSV", type=["csv"])
+
+if uploaded_file is None:
+    st.info("Hãy tải lên một file CSV để bắt đầu.")
+    st.subheader("Xem trước dữ liệu")
+    st.dataframe(
+        [
+            {"time": "YYYY-MM-DD", "value": "..."},
+            {"time": "YYYY-MM-DD", "value": "..."},
+            {"time": "YYYY-MM-DD", "value": "..."},
+        ],
+        width="stretch",
+    )
+else:
+    try:
+        raw_df = load_csv_data(uploaded_file)
+    except ValueError as error:
+        st.error(str(error))
+    else:
+        columns = raw_df.columns.tolist()
+        control_col, info_col = st.columns([1, 1])
+
+        with control_col:
+            st.subheader("Chọn cột dữ liệu")
+            time_column = st.selectbox("Cột thời gian", columns)
+            value_options = [column for column in columns if column != time_column]
+            value_column = st.selectbox("Cột giá trị", value_options)
+            diff_order = st.radio(
+                "Mức sai phân",
+                options=[0, 1, 2],
+                format_func=lambda value: {
+                    0: "Chuỗi gốc",
+                    1: "Sai phân bậc 1",
+                    2: "Sai phân bậc 2",
+                }[value],
+                horizontal=True,
+            )
+
+        with info_col:
+            st.subheader("Giải thích ngắn")
+            st.write(
+                """
+                - Chuỗi gốc: dữ liệu ban đầu sau khi đã chuẩn hóa thời gian.
+                - Sai phân bậc 1: lấy chênh lệch giữa hai thời điểm liên tiếp.
+                - Sai phân bậc 2: sai phân thêm một bước nữa để giảm xu hướng mạnh hơn.
+                """
+            )
+            st.caption("Thường nên bắt đầu từ chuỗi gốc, sau đó mới thử sai phân khi chuỗi còn xu hướng rõ.")
+
+        try:
+            prepared_df = prepare_time_series_dataframe(
+                raw_df,
+                time_column=time_column,
+                value_column=value_column,
+            )
+            original_series_df = apply_differencing(
+                prepared_df,
+                time_column=time_column,
+                value_column=value_column,
+                order=0,
+            )
+            differenced_df = apply_differencing(
+                prepared_df,
+                time_column=time_column,
+                value_column=value_column,
+                order=diff_order,
+            )
+        except ValueError as error:
+            st.error(str(error))
+        else:
+            st.divider()
+
+            st.subheader("Biểu đồ chuỗi thời gian gốc")
+            try:
+                original_figure = create_time_series_figure(
+                    original_series_df,
+                    time_column=time_column,
+                    value_column=value_column,
+                    title="Chuỗi thời gian gốc",
+                )
+            except ValueError as error:
+                st.error(str(error))
+            else:
+                st.plotly_chart(original_figure, width="stretch")
+
+            st.subheader("Xem trước dữ liệu gốc")
+            st.dataframe(original_series_df.head(20), width="stretch")
+
+            st.divider()
+
+            section_title = {
+                0: "Chuỗi hiện đang xem",
+                1: "Chuỗi sau sai phân bậc 1",
+                2: "Chuỗi sau sai phân bậc 2",
+            }[diff_order]
+            st.subheader(section_title)
+
+            try:
+                differenced_figure = create_time_series_figure(
+                    differenced_df,
+                    time_column=time_column,
+                    value_column=value_column,
+                    title=section_title,
+                )
+            except ValueError as error:
+                st.error(str(error))
+            else:
+                st.plotly_chart(differenced_figure, width="stretch")
+
+            st.dataframe(differenced_df.head(20), width="stretch")
+            st.caption("Preview hiển thị dữ liệu sau khi convert thời gian, sort theo thời gian và áp dụng sai phân nếu có.")
