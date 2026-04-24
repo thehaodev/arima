@@ -1,6 +1,7 @@
 import streamlit as st
 
 from src.data_utils import load_csv_data, prepare_time_series_dataframe
+from src.diagnostics import create_acf_pacf_figures, get_allowed_lag_range
 from src.stationarity import apply_differencing, create_time_series_figure
 
 
@@ -125,3 +126,41 @@ else:
 
             st.dataframe(differenced_df.head(20), width="stretch")
             st.caption("Preview hiển thị dữ liệu sau khi convert thời gian, sort theo thời gian và áp dụng sai phân nếu có.")
+
+            st.divider()
+            st.subheader("ACF và PACF")
+            st.write(
+                """
+                ACF và PACF là hai biểu đồ hỗ trợ chọn tham số ban đầu cho ARIMA.
+                Hiểu nhanh:
+                - ACF thường dùng để gợi ý `q`
+                - PACF thường dùng để gợi ý `p`
+                """
+            )
+
+            try:
+                min_lag, max_lag = get_allowed_lag_range(len(differenced_df))
+            except ValueError as error:
+                st.warning(str(error))
+            else:
+                lag_count = st.slider(
+                    "Chọn số lag",
+                    min_value=min_lag,
+                    max_value=max_lag,
+                    value=min(10, max_lag),
+                )
+
+                try:
+                    acf_figure, pacf_figure = create_acf_pacf_figures(
+                        differenced_df,
+                        value_column=value_column,
+                        lags=lag_count,
+                    )
+                except ValueError as error:
+                    st.warning(str(error))
+                else:
+                    acf_col, pacf_col = st.columns(2)
+                    with acf_col:
+                        st.plotly_chart(acf_figure, width="stretch")
+                    with pacf_col:
+                        st.plotly_chart(pacf_figure, width="stretch")
