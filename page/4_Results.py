@@ -2,42 +2,38 @@ import streamlit as st
 
 
 st.title("Results")
-st.caption("Trang hiển thị kết quả mô hình và diễn giải. Hiện tại là placeholder.")
+st.caption("Trang hiển thị kết quả forecast từ ARIMA sau khi chạy trong ARIMA Lab.")
 
-summary_col, metric_col = st.columns([2, 1])
+arima_results = st.session_state.get("arima_results")
 
-with summary_col:
-    st.subheader("Tóm tắt kết quả")
-    st.write(
-        """
-        Khu vực này sẽ hiển thị thông tin tổng quan sau khi chạy mô hình:
-        tham số đã chọn, trạng thái chạy, và nhận xét ngắn về đầu ra.
-        """
-    )
-    st.info("Placeholder: chưa có kết quả thật vì chưa tích hợp pipeline ARIMA.")
+if not arima_results:
+    st.info("Chưa có kết quả ARIMA. Hãy sang trang ARIMA Lab để chọn p, d, q và chạy mô hình.")
+else:
+    summary_col, metric_col = st.columns([2, 1])
 
-with metric_col:
-    st.subheader("Chỉ số")
-    st.metric("AIC", "--")
-    st.metric("BIC", "--")
-    st.metric("RMSE", "--")
+    with summary_col:
+        p_value, d_value, q_value = arima_results["order"]
+        st.subheader("Tóm tắt kết quả")
+        st.write(
+            f"""
+            Mô hình đã chạy: `ARIMA({p_value}, {d_value}, {q_value})`
 
-st.divider()
+            - Cột thời gian: `{arima_results['time_column']}`
+            - Cột giá trị: `{arima_results['value_column']}`
+            - Forecast trên tập test và forecast tương lai đã được lưu từ ARIMA Lab.
+            """
+        )
 
-chart_col, notes_col = st.columns([3, 2])
+    with metric_col:
+        st.subheader("Chỉ số")
+        st.metric("MAE", f"{arima_results['mae']:.4f}")
+        st.metric("RMSE", f"{arima_results['rmse']:.4f}")
 
-with chart_col:
-    st.subheader("Biểu đồ")
-    st.empty()
-    st.caption("Placeholder cho biểu đồ chuỗi gốc, fitted values hoặc forecast.")
+    st.divider()
+    st.subheader("Forecast trên test")
+    st.dataframe(arima_results["test_forecast_df"], width="stretch")
 
-with notes_col:
-    st.subheader("Diễn giải")
-    st.write(
-        """
-        Phần này sẽ giải thích kết quả theo ngôn ngữ đơn giản:
-        mô hình đang làm gì, kết quả có hợp lý không, và cần thử điều chỉnh gì tiếp theo.
-        """
-    )
+    st.subheader("Forecast tương lai")
+    st.dataframe(arima_results["future_forecast_df"], width="stretch")
 
-st.warning("Trang kết quả hiện chưa kết nối với dữ liệu hoặc mô hình thực tế.")
+    st.caption("Nếu kết quả chưa hợp lý, hãy quay lại ARIMA Lab để đổi p, d, q hoặc cách chia train/test.")
