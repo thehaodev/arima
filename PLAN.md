@@ -1,42 +1,37 @@
 # PLAN
 
-## Milestone 1
+## Mục tiêu hiện tại
 
-Tạo skeleton multi-page Streamlit app.
+Hoàn thiện một app Streamlit một trang để demo ARIMA theo flow trực quan, gọn và dễ dùng.
 
-Acceptance:
+## Flow chính
 
-- app chạy được
-- có sidebar/page navigation
-- chưa cần logic ARIMA
+1. Chọn dữ liệu:
+   - dùng sample dataset trong `data/sample_series.csv`
+   - hoặc upload CSV riêng
+2. Quan sát chuỗi gốc
+3. Thử differencing bậc 1 hoặc bậc 2
+4. Xem ACF/PACF trên chuỗi đã được làm dừng
+5. Chọn `p, d, q` và fit ARIMA
+6. Xem forecast, residual và metrics ngay trong cùng trang
 
-Validation:
+## Acceptance hiện tại
 
-- streamlit run app.py
+- app chạy bằng `streamlit run app.py`
+- có thể dùng sample dataset hoặc upload CSV
+- có biểu đồ chuỗi gốc
+- có differencing bậc 1 và bậc 2
+- có ACF/PACF và chọn số lag
+- có fit `ARIMA(p,d,q)` thủ công
+- có forecast trên tập test
+- có forecast tương lai
+- có `MAE` và `RMSE`
+- có biểu đồ `Actual vs Forecast`
+- có residual table/plot đơn giản để đọc nhanh
 
-## Milestone 2
+## Dọn dẹp project
 
-Thêm page Overview và Theory.
-
-Acceptance:
-
-- có các section: Time Series, Stationarity, Differencing, AR, MA, ACF/PACF, ARIMA
-- nội dung tiếng Việt dễ đọc
-
-Validation:
-
-- mở app và xem page hiển thị đúng
-
-## Milestone 3
-
-Thêm data upload + preview + chọn cột.
-
-Acceptance:
-
-- upload CSV
-- chọn cột thời gian và cột giá trị
-- preview dataframe
-
-Validation:
-
-- test với file CSV mẫu
+- chỉ giữ một page chính là `page/3_ARIMA_Lab.py`
+- không giữ page Overview/Theory/Results
+- không giữ file utility thừa trong `data/`
+- không giữ `__pycache__` trong repo

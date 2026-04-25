@@ -2,52 +2,34 @@ import streamlit as st
 
 
 st.set_page_config(
-    page_title="ARIMA Learning Web",
+    page_title="ARIMA Demo Lab",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 
-overview_page = st.Page(
-    "page/1_Overview.py",
-    title="Overview",
-    default=True,
-)
-theory_page = st.Page(
-    "page/2_Theory.py",
-    title="Theory",
-)
 lab_page = st.Page(
     "page/3_ARIMA_Lab.py",
     title="ARIMA Lab",
-)
-results_page = st.Page(
-    "page/4_Results.py",
-    title="Results",
+    default=True,
 )
 
-navigation = st.navigation(
-    {
-        "ARIMA Learning": [
-            overview_page,
-            theory_page,
-            lab_page,
-            results_page,
-        ]
-    }
-)
+navigation = st.navigation({"Demo": [lab_page]})
 
 with st.sidebar:
-    st.title("ARIMA Learning Web")
-    st.caption("Skeleton multi-page app cho việc học ARIMA.")
+    st.title("ARIMA Demo Lab")
+    st.caption("Một luồng demo trực quan để thử ARIMA trên dữ liệu chuỗi thời gian.")
     st.divider()
     st.markdown(
         """
-        Ứng dụng hiện đang ở giai đoạn khởi tạo:
+        Các bước:
 
-        - Có điều hướng nhiều trang
-        - Có layout và nội dung mẫu
-        - Chưa tích hợp logic ARIMA
+        1. Chọn sample dataset hoặc tải lên file CSV
+        2. Quan sát chuỗi gốc
+        3. Thử differencing và kiểm tra tính dừng
+        4. Xem ACF/PACF
+        5. Chọn `p, d, q` và fit ARIMA
+        6. Xem forecast, residual và metrics ngay trong cùng trang
         """
     )
 
